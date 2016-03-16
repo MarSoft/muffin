@@ -51,40 +51,6 @@ class Manager(object):
         self.parsers = self.parser.add_subparsers(dest='subparser')
         self.handlers = dict()
 
-        def shell_ctx():
-            ctx = {'app': app}
-            return ctx
-
-        app.cfg.setdefault('MANAGE_SHELL', shell_ctx)
-
-        @self.command
-        def shell(ipython: bool=True):
-            """Run the application shell.
-
-            :param ipython: Use IPython as shell
-            """
-            app.loop.run_until_complete(app.start())
-
-            banner = '\nInteractive Muffin Shell\n'
-            namespace = app.cfg.MANAGE_SHELL
-            if callable(namespace):
-                namespace = namespace()
-            banner += "Loaded objects: %s" % list(namespace.keys())
-            if ipython:
-                try:
-                    from IPython.terminal.embed import InteractiveShellEmbed
-                    sh = InteractiveShellEmbed(banner1=banner)
-                except ImportError:
-                    pass
-                else:
-                    sh(global_ns={}, local_ns=namespace)
-                    return
-
-            from code import interact
-            interact(banner, local=namespace)
-
-            app.loop.run_until_complete(app.finish())
-
         @self.command
         def run(bind: str='127.0.0.1:5000', daemon: bool=False, pid: str=None,
                 reload: bool=self.app.cfg.DEBUG, timeout: int=30, name: str=self.app.name,
@@ -121,6 +87,43 @@ class Manager(object):
             if access_logfile:
                 gapp.cfg.set('accesslog', access_logfile)
             gapp.run()
+
+        if not app:
+            return
+
+        def shell_ctx():
+            ctx = {'app': app}
+            return ctx
+
+        app.cfg.setdefault('MANAGE_SHELL', shell_ctx)
+
+        @self.command
+        def shell(ipython: bool=True):
+            """Run the application shell.
+
+            :param ipython: Use IPython as shell
+            """
+            app.loop.run_until_complete(app.start())
+
+            banner = '\nInteractive Muffin Shell\n'
+            namespace = app.cfg.MANAGE_SHELL
+            if callable(namespace):
+                namespace = namespace()
+            banner += "Loaded objects: %s" % list(namespace.keys())
+            if ipython:
+                try:
+                    from IPython.terminal.embed import InteractiveShellEmbed
+                    sh = InteractiveShellEmbed(banner1=banner)
+                except ImportError:
+                    pass
+                else:
+                    sh(global_ns={}, local_ns=namespace)
+                    return
+
+            from code import interact
+            interact(banner, local=namespace)
+
+            app.loop.run_until_complete(app.finish())
 
         @self.command
         def collect(destination: str, source: list=app.cfg.STATIC_FOLDERS,
