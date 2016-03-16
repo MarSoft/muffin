@@ -44,7 +44,7 @@ class Manager(object):
 
     """
 
-    def __init__(self, app):
+    def __init__(self, app, appname=None, app_uri=None):
         """Initialize the commands."""
         self.app = app
         self.parser = argparse.ArgumentParser(description="Manage %s" % app.name.capitalize())
@@ -260,6 +260,13 @@ def run():
     app_uri = args_.app
     if ':' not in app_uri:
         app_uri += ':app'
+
+    # if requested command is `run` then we don't want to import app here
+    # or else it will break live reload
+    if 'run' in subargs_:
+        manager = Manager(None, appname='application', app_uri=app_uri)
+        return manager(*subargs_, prog='muffin %s' % args_.app)
+
     try:
         app = import_app(app_uri)
         app.logger.info('Application is loaded: %s' % app.name)
