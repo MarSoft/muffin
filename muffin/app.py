@@ -127,8 +127,9 @@ class Application(web.Application):
 
             except ImportError as exc:
                 config.CONFIG = None
+                exc_save = exc  # or else it will be unavailable on Python 3.5
                 self.register_on_start(
-                    lambda app: app.logger.error("Error importing %s: %s", module, exc))
+                    lambda app: app.logger.error("Error importing %s: %s", module, exc_save))
 
         return config
 
