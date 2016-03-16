@@ -46,6 +46,7 @@ class Manager(object):
 
     def __init__(self, app, appname=None, app_uri=None):
         """Initialize the commands."""
+        appless = app is None
         appname = appname or app.name
 
         self.app = app
@@ -55,9 +56,9 @@ class Manager(object):
 
         @self.command
         def run(bind: str='127.0.0.1:5000', daemon: bool=False, pid: str=None,
-                reload: bool=self.app.cfg.DEBUG if self.app else False, timeout: int=30, name: str=appname,
+                reload: bool=False if appless else self.app.cfg.DEBUG, timeout: int=30, name: str=appname,
                 worker_class: str='muffin.worker.GunicornWorker', workers: int=1,
-                log_file: str=None, access_logfile: str=self.app.cfg.ACCESS_LOG if self.app else None):
+                log_file: str=None, access_logfile: str=None if appless else self.app.cfg.ACCESS_LOG):
             """Run the application.
 
             :param bind: The socket to bind
@@ -75,7 +76,7 @@ class Manager(object):
 
             gapp = GunicornApp(
                 usage="%(prog)s run [OPTIONS]",
-                config=self.app.cfg.CONFIG if self.app else os.environ.get(CONFIGURATION_ENVIRON_VARIABLE))
+                config=os.environ.get(CONFIGURATION_ENVIRON_VARIABLE) if appless else self.app.cfg.CONFIG )
             gapp.app_uri = app or app_uri
             gapp.cfg.set('bind', bind)
             gapp.cfg.set('daemon', daemon)
@@ -91,7 +92,7 @@ class Manager(object):
                 gapp.cfg.set('accesslog', access_logfile)
             gapp.run()
 
-        if not app:
+        if appless:
             # if we are started without app argument then we only need `run` cmd
             return
 
