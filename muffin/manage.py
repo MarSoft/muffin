@@ -46,16 +46,18 @@ class Manager(object):
 
     def __init__(self, app, appname=None, app_uri=None):
         """Initialize the commands."""
+        appname = appname or app.name
+
         self.app = app
-        self.parser = argparse.ArgumentParser(description="Manage %s" % app.name.capitalize())
+        self.parser = argparse.ArgumentParser(description="Manage %s" % appname.capitalize())
         self.parsers = self.parser.add_subparsers(dest='subparser')
         self.handlers = dict()
 
         @self.command
         def run(bind: str='127.0.0.1:5000', daemon: bool=False, pid: str=None,
-                reload: bool=self.app.cfg.DEBUG, timeout: int=30, name: str=self.app.name,
+                reload: bool=self.app.cfg.DEBUG if self.app else False, timeout: int=30, name: str=appname,
                 worker_class: str='muffin.worker.GunicornWorker', workers: int=1,
-                log_file: str=None, access_logfile: str=self.app.cfg.ACCESS_LOG):
+                log_file: str=None, access_logfile: str=self.app.cfg.ACCESS_LOG if self.app else None):
             """Run the application.
 
             :param bind: The socket to bind
@@ -72,8 +74,9 @@ class Manager(object):
             from muffin.worker import GunicornApp
 
             gapp = GunicornApp(
-                usage="%(prog)s run [OPTIONS]", config=self.app.cfg.CONFIG)
-            gapp.app_uri = app
+                usage="%(prog)s run [OPTIONS]",
+                config=self.app.cfg.CONFIG if self.app else os.environ.get(CONFIGURATION_ENVIRON_VARIABLE))
+            gapp.app_uri = app or app_uri
             gapp.cfg.set('bind', bind)
             gapp.cfg.set('daemon', daemon)
             gapp.cfg.set('pidfile', pid)
@@ -89,6 +92,7 @@ class Manager(object):
             gapp.run()
 
         if not app:
+            # if we are started without app argument then we only need `run` cmd
             return
 
         def shell_ctx():
