@@ -48,6 +48,13 @@ class Manager(object):
         """Initialize the commands."""
         appless = app is None
         appname = appname or app.name
+        if appless:
+            from muffin.app import Application
+            # TODO: maybe load real config somehow?
+            # but then copy & unload it...
+            appcfg = Application.defaults
+        else:
+            appcfg = app.cfg
 
         self.app = app
         self.parser = argparse.ArgumentParser(description="Manage %s" % appname.capitalize())
@@ -56,9 +63,9 @@ class Manager(object):
 
         @self.command
         def run(bind: str='127.0.0.1:5000', daemon: bool=False, pid: str=None,
-                reload: bool=False if appless else self.app.cfg.DEBUG, timeout: int=30, name: str=appname,
+                reload: bool=appcfg['DEBUG'], timeout: int=30, name: str=appname,
                 worker_class: str='muffin.worker.GunicornWorker', workers: int=1,
-                log_file: str=None, access_logfile: str=None if appless else self.app.cfg.ACCESS_LOG):
+                log_file: str=None, access_logfile: str=appcfg['ACCESS_LOG']):
             """Run the application.
 
             :param bind: The socket to bind
