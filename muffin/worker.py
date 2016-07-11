@@ -68,10 +68,15 @@ class GunicornApp(VanillaGunicornApp):
         if not isinstance(app, Application):
             module, *_ = self.app_uri.split(':', 1)
             if module in sys.modules:
-                sys.modules.pop(module)
-                paths = [p for p in sys.modules if p.startswith('%s.' % module)]
-                for path in paths:
-                    sys.modules.pop(path)
+                appdir = os.path.dirname(sys.modules[module].__file__)
+                appmodules = [
+                    p for p, o in sys.modules.values()
+                    if os.path.dirname(getattr(o, '__file__', '')) == appdir]
+                for module in appmodules:
+                    sys.modules.pop(module)
+                    paths = [p for p in sys.modules if p.startswith('%s.' % module)]
+                    for path in paths:
+                        sys.modules.pop(path)
             app = import_app(app)
 
         return app
