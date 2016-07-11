@@ -70,7 +70,7 @@ class GunicornApp(VanillaGunicornApp):
             if module in sys.modules:
                 appdir = os.path.dirname(sys.modules[module].__file__)
                 appmodules = [
-                    p for p, o in sys.modules.values()
+                    p for (p, o) in sys.modules.values()
                     if os.path.dirname(getattr(o, '__file__', '')) == appdir]
                 for module in appmodules:
                     sys.modules.pop(module)
